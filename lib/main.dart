@@ -11,7 +11,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: Constants.appTitle,
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.light().copyWith(primaryColor: Constants.MAIN_COLOR),
+      theme: ThemeData.light().copyWith(
+          primaryColor:
+              Constants.MAIN_COLOR), // canvasColor: Colors.transparent),
       initialRoute: '/',
       onGenerateRoute: RouteGenerator.generateRoute,
     );

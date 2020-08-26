@@ -1,10 +1,6 @@
-import 'dart:convert';
-
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'dart:async';
-
-import 'package:flutter_p2p/flutter_p2p.dart';
-import 'package:flutter_p2p/gen/protos/protos.pb.dart';
+import 'package:flutter/services.dart';
 import 'package:xendkar/constants.dart';
 
 class SendPage extends StatefulWidget {
@@ -12,200 +8,266 @@ class SendPage extends StatefulWidget {
   _SendPageState createState() => _SendPageState();
 }
 
-class _SendPageState extends State<SendPage> with WidgetsBindingObserver {
-  @override
-  void initState() {
-    super.initState();
-    _register();
-    WidgetsBinding.instance.addObserver(this);
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      _register();
-    } else if (state == AppLifecycleState.paused) {
-      _unregister();
-    }
-  }
-
-  List<WifiP2pDevice> devices = [];
-
-  var _isConnected = false;
-  var _isHost = false;
-
-  List<StreamSubscription> _subscriptions = [];
-
-  void _register() async {
-    if (!await _checkPermission()) {
-      return;
-    }
-    _subscriptions.add(FlutterP2p.wifiEvents.stateChange.listen((change) {
-      print("stateChange: ${change.isEnabled}");
-    }));
-
-    _subscriptions.add(FlutterP2p.wifiEvents.connectionChange.listen((change) {
-      setState(() {
-        _isConnected = change.networkInfo.isConnected;
-        _isHost = change.wifiP2pInfo.isGroupOwner;
-        _deviceAddress = change.wifiP2pInfo.groupOwnerAddress;
-      });
-      print(
-          "connectionChange: ${change.wifiP2pInfo.isGroupOwner}, Connected: ${change.networkInfo.isConnected}");
-    }));
-
-    _subscriptions.add(FlutterP2p.wifiEvents.thisDeviceChange.listen((change) {
-      print(
-          "deviceChange: ${change.deviceName} / ${change.deviceAddress} / ${change.primaryDeviceType} / ${change.secondaryDeviceType} ${change.isGroupOwner ? 'GO' : '-GO'}");
-    }));
-
-    _subscriptions.add(FlutterP2p.wifiEvents.discoveryChange.listen((change) {
-      print("discoveryStateChange: ${change.isDiscovering}");
-    }));
-
-    _subscriptions.add(FlutterP2p.wifiEvents.peersChange.listen((change) {
-      print("peersChange: ${change.devices.length}");
-      change.devices.forEach((device) {
-        print("device: ${device.deviceName} / ${device.deviceAddress}");
-      });
-
-      setState(() {
-        devices = change.devices;
-      });
-    }));
-
-    FlutterP2p.register();
-  }
-
-  void _unregister() {
-    _subscriptions.forEach((subscription) => subscription.cancel());
-    FlutterP2p.unregister();
-  }
-
-  P2pSocket _socket;
-  void _openPortAndAccept(int port) async {
-    var socket = await FlutterP2p.openHostPort(port);
-    setState(() {
-      _socket = socket;
-    });
-
-    var buffer = "";
-    socket.inputStream.listen((data) {
-      var msg = String.fromCharCodes(data.data);
-      buffer += msg;
-      if (data.dataAvailable == 0) {
-        snackBar("Data Received: $buffer");
-        socket.writeString("Successfully received: $buffer");
-        buffer = "";
-      }
-    });
-
-    print("_openPort done");
-
-    await FlutterP2p.acceptPort(port);
-    print("_accept done");
-  }
-
-  var _deviceAddress = "";
-
-  _connectToPort(int port) async {
-    var socket = await FlutterP2p.connectToHost(
-      _deviceAddress,
-      port,
-      timeout: 100000,
-    );
-
-    setState(() {
-      _socket = socket;
-    });
-
-    _socket.inputStream.listen((data) {
-      var msg = utf8.decode(data.data);
-      snackBar("Received from Host: $msg");
-    });
-
-    print("_connectToPort done");
-  }
-
-  Future<bool> _checkPermission() async {
-    if (!await FlutterP2p.isLocationPermissionGranted()) {
-      await FlutterP2p.requestLocationPermission();
-      return false;
-    }
-    return true;
-  }
-
-  final _scaffoldKey = GlobalKey<ScaffoldState>();
+class _SendPageState extends State<SendPage> {
+  // final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      key: _scaffoldKey,
-      appBar: AppBar(
-        title: Text(Constants.appTitle),
-      ),
-      body: Column(
-        children: <Widget>[
-          Text(_isConnected
-              ? "Connected: ${_isHost ? "Host" : "Client"}"
-              : "Disconnected"),
-          RaisedButton(
-            onPressed: () => FlutterP2p.discoverDevices(),
-            child: Text("Discover Devices"),
+    return DefaultTabController(
+      length: choices.length,
+      child: Scaffold(
+        // key: _scaffoldKey,
+        appBar: AppBar(
+          title: const Text('Select File Picker example app'),
+          bottom: TabBar(
+            isScrollable: true,
+            tabs: choices.map((Choice choice) {
+              return Tab(
+                text: choice.title,
+                icon: Icon(choice.icon),
+              );
+            }).toList(),
           ),
-          RaisedButton(
-            onPressed:
-                _isConnected && _isHost ? () => _openPortAndAccept(8888) : null,
-            child: Text("Open and accept data from port 8888"),
-          ),
-          RaisedButton(
-            onPressed: _isConnected ? () => _connectToPort(8888) : null,
-            child: Text("Connect to port 8888"),
-          ),
-          RaisedButton(
-            onPressed: _socket != null
-                ? () => _socket.writeString("Hello World")
-                : null,
-            child: Text("Send hello world"),
-          ),
-          RaisedButton(
-            onPressed: _isConnected ? () => FlutterP2p.removeGroup() : null,
-            child: Text("Disconnect"),
-          ),
-          Expanded(
-            child: ListView(
-              children: this.devices.map((d) {
-                return ListTile(
-                  title: Text(d.deviceName),
-                  subtitle: Text(d.deviceAddress),
-                  onTap: () {
-                    print(
-                        "${_isConnected ? "Disconnect" : "Connect"} to device: $_deviceAddress");
-                    return _isConnected
-                        ? FlutterP2p.cancelConnect(d)
-                        : FlutterP2p.connect(d);
-                  },
-                );
-              }).toList(),
-            ),
-          ),
-        ],
+        ),
+        body: TabBarView(
+          children: choices.map((Choice choice) {
+            return Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: ChoiceCard(choice: choice),
+            );
+          }).toList(),
+        ),
       ),
     );
   }
+}
 
-  snackBar(String text) {
-    _scaffoldKey.currentState.showSnackBar(
-      SnackBar(
-        content: Text(text),
-        duration: Duration(seconds: 2),
-      ),
-    );
+class Choice {
+  const Choice({this.title, this.icon});
+
+  final String title;
+  final IconData icon;
+}
+
+const List<Choice> choices = const <Choice>[
+  const Choice(title: 'Recent', icon: Icons.watch_later),
+  const Choice(title: 'Files', icon: Icons.folder),
+  const Choice(title: 'Videos', icon: Icons.video_library),
+  const Choice(title: 'Pictures', icon: Icons.photo_library),
+  const Choice(title: 'Apps', icon: Icons.android),
+  const Choice(title: 'Audio', icon: Icons.library_music),
+];
+
+class ChoiceCard extends StatefulWidget {
+  const ChoiceCard({Key key, this.choice}) : super(key: key);
+
+  final Choice choice;
+
+  @override
+  _ChoiceCardState createState() => _ChoiceCardState();
+}
+
+class _ChoiceCardState extends State<ChoiceCard> {
+  String _fileName;
+  String _path;
+  Map<String, String> _paths;
+  String _extension;
+  bool _loadingPath = false;
+  bool _multiPick = false;
+  FileType _pickingType = FileType.any;
+  TextEditingController _controller = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(() => _extension = _controller.text);
+  }
+
+  void _openFileExplorer() async {
+    setState(() => _loadingPath = true);
+    try {
+      if (_multiPick) {
+        _path = null;
+        _paths = await FilePicker.getMultiFilePath(
+          type: _pickingType,
+          allowedExtensions: (_extension?.isNotEmpty ?? false)
+              ? _extension?.replaceAll(' ', '')?.split(',')
+              : null,
+        );
+      } else {
+        _paths = null;
+        _path = await FilePicker.getFilePath(
+          type: _pickingType,
+          allowedExtensions: (_extension?.isNotEmpty ?? false)
+              ? _extension?.replaceAll(' ', '')?.split(',')
+              : null,
+        );
+      }
+    } on PlatformException catch (e) {
+      print("Unsupported operation" + e.toString());
+    }
+    if (!mounted) return;
+    setState(() {
+      _loadingPath = false;
+      _fileName = _path != null
+          ? _path.split('/').last
+          : _paths != null ? _paths.keys.toString() : '...';
+    });
+  }
+
+  void _selectFolder() {
+    FilePicker.getDirectoryPath().then((value) {
+      setState(() => _path = value);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final TextStyle textStyle = Theme.of(context).textTheme.headline4;
+    return this.widget.choice.title == 'CAR'
+        ? Center(
+            child: Padding(
+            padding: const EdgeInsets.only(left: 10.0, right: 10.0),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Padding(
+                    padding: const EdgeInsets.only(top: 20.0),
+                    child: DropdownButton(
+                        hint: Text('LOAD PATH FROM'),
+                        value: _pickingType,
+                        items: <DropdownMenuItem>[
+                          DropdownMenuItem(
+                            child: Text('FROM AUDIO'),
+                            value: FileType.audio,
+                          ),
+                          DropdownMenuItem(
+                            child: Text('FROM IMAGE'),
+                            value: FileType.image,
+                          ),
+                          DropdownMenuItem(
+                            child: Text('FROM VIDEO'),
+                            value: FileType.video,
+                          ),
+                          DropdownMenuItem(
+                            child: Text('FROM MEDIA'),
+                            value: FileType.media,
+                          ),
+                          DropdownMenuItem(
+                            child: Text('FROM ANY'),
+                            value: FileType.any,
+                          ),
+                          DropdownMenuItem(
+                            child: Text('CUSTOM FORMAT'),
+                            value: FileType.custom,
+                          ),
+                        ],
+                        onChanged: (value) => setState(() {
+                              _pickingType = value;
+                              if (_pickingType != FileType.custom) {
+                                _controller.text = _extension = '';
+                              }
+                            })),
+                  ),
+                  ConstrainedBox(
+                    constraints: BoxConstraints.tightFor(width: 100.0),
+                    child: _pickingType == FileType.custom
+                        ? TextFormField(
+                            maxLength: 15,
+                            autovalidate: true,
+                            controller: _controller,
+                            decoration:
+                                InputDecoration(labelText: 'File extension'),
+                            keyboardType: TextInputType.text,
+                            textCapitalization: TextCapitalization.none,
+                          )
+                        : Container(),
+                  ),
+                  ConstrainedBox(
+                    constraints: BoxConstraints.tightFor(width: 200.0),
+                    child: SwitchListTile.adaptive(
+                      title: Text('Pick multiple files',
+                          textAlign: TextAlign.right),
+                      onChanged: (bool value) =>
+                          setState(() => _multiPick = value),
+                      value: _multiPick,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 50.0, bottom: 20.0),
+                    child: Column(
+                      children: <Widget>[
+                        RaisedButton(
+                          onPressed: () => _openFileExplorer(),
+                          child: Text("Open file picker"),
+                        ),
+                        RaisedButton(
+                          onPressed: () => _selectFolder(),
+                          child: Text("Pick folder"),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Builder(
+                    builder: (BuildContext context) => _loadingPath
+                        ? Padding(
+                            padding: const EdgeInsets.only(bottom: 10.0),
+                            child: const CircularProgressIndicator())
+                        : _path != null || _paths != null
+                            ? Container(
+                                padding: const EdgeInsets.only(bottom: 30.0),
+                                height:
+                                    MediaQuery.of(context).size.height * 0.50,
+                                child: Scrollbar(
+                                    child: ListView.separated(
+                                  itemCount: _paths != null && _paths.isNotEmpty
+                                      ? _paths.length
+                                      : 1,
+                                  itemBuilder:
+                                      (BuildContext context, int index) {
+                                    final bool isMultiPath =
+                                        _paths != null && _paths.isNotEmpty;
+                                    final String name = 'File $index: ' +
+                                        (isMultiPath
+                                            ? _paths.keys.toList()[index]
+                                            : _fileName ?? '...');
+                                    final path = isMultiPath
+                                        ? _paths.values
+                                            .toList()[index]
+                                            .toString()
+                                        : _path;
+
+                                    return ListTile(
+                                      title: Text(
+                                        name,
+                                      ),
+                                      subtitle: Text(path),
+                                    );
+                                  },
+                                  separatorBuilder:
+                                      (BuildContext context, int index) =>
+                                          Divider(),
+                                )),
+                              )
+                            : Container(),
+                  ),
+                ],
+              ),
+            ),
+          ))
+        : Card(
+            color: Colors.white,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  Icon(widget.choice.icon, size: 128.0, color: textStyle.color),
+                  Text(widget.choice.title, style: textStyle),
+                ],
+              ),
+            ),
+          );
   }
 }

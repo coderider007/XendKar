@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class Constants {
-  static const appTitle = 'ScanKar';
+  static const appTitle = 'XendKar';
   static const PRIVACY_URL = 'https://sites.google.com/view/scankar/home';
   static const ROUTE_HOME = '/';
   static const ROUTE_SEND_PAGE = '/send';
