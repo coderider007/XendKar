@@ -1,8 +1,3 @@
-import 'dart:io';
-
-import 'package:apk_admin/apk_admin.dart';
-import 'package:ext_storage/ext_storage.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
 import 'package:xendkar/redux/reducers.dart';

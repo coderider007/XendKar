@@ -97,7 +97,7 @@ class _HomePageState extends State<HomePage> {
                           Text(
                             'Receive',
                             style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 10,
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold),
                           ),
@@ -105,7 +105,10 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                   ),
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.of(context)
+                        .pushNamed(Constants.ROUTE_RECEIVE_PAGE);
+                  },
                 ),
               ),
             ),
@@ -129,7 +132,7 @@ class _HomePageState extends State<HomePage> {
                           Text(
                             'Send',
                             style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 10,
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold),
                           ),

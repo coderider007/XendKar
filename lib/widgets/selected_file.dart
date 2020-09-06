@@ -20,12 +20,14 @@ class SelectedFile extends StatelessWidget {
       children: [
         Container(
           width: MediaQuery.of(context).size.width / 3,
+          //height: MediaQuery.of(context).size.height / 3,
           color: _isSelected ? Colors.grey : Colors.white,
           child: Padding(
             padding: const EdgeInsets.all(2.0),
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                FileIcon(fileName, size: 80),
+                FileIcon(fileName, size: 60),
                 // Image.file(
                 //   _file,
                 //   height: 80,

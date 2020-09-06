@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:apk_admin/apk_admin.dart';
+import 'package:flutter_p2p/flutter_p2p.dart';
+import 'package:flutter_p2p/gen/protos/protos.pb.dart';
 
 class AppSelected {
   final App app;
@@ -50,4 +52,26 @@ class AudioSelected {
 class AudioDeselected {
   final File file;
   AudioDeselected(this.file);
+}
+
+class DeviceListUpdated {
+  final List<WifiP2pDevice> devices;
+  DeviceListUpdated(this.devices);
+}
+
+class OpenedHostPort {
+  final P2pSocket socket;
+  OpenedHostPort(this.socket);
+}
+
+class ConnectToHostPort {
+  final P2pSocket socket;
+  ConnectToHostPort(this.socket);
+}
+
+class ConnectionChangeAction {
+  final bool isConnected;
+  final bool isHost;
+  final String deviceAddress;
+  ConnectionChangeAction(this.isConnected, this.isHost, this.deviceAddress);
 }

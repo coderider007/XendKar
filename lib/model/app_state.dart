@@ -4,6 +4,8 @@ import 'package:apk_admin/apk_admin.dart';
 import 'package:ext_storage/ext_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:xendkar/model/wifi_state.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class AppState {
   List<File> selectedFiles = [];
@@ -21,6 +23,8 @@ class AppState {
   List<File> selectedAudios = [];
   List<File> allAudios = [];
 
+  WiFiState wiFiState;
+
   AppState({
     @required allApps,
     @required allFiles,
@@ -33,6 +37,7 @@ class AppState {
     this.selectedAudios = [];
     this.selectedVideos = [];
     this.selectedPictures = [];
+    wiFiState = WiFiState();
 
     this.allApps = []..addAll(allApps);
     this.allFiles = []..addAll(allFiles);
@@ -47,6 +52,7 @@ class AppState {
     this.selectedAudios = []..addAll(another.selectedAudios);
     this.selectedVideos = []..addAll(another.selectedVideos);
     this.selectedPictures = []..addAll(another.selectedPictures);
+    this.wiFiState = another.wiFiState;
 
     this.allApps = []..addAll(another.allApps);
     this.allFiles = []..addAll(another.allFiles);
@@ -56,6 +62,11 @@ class AppState {
   }
 
   static Future<AppState> initState() async {
+    var status = await Permission.storage.status;
+    if (!status.isGranted) {
+      await Permission.storage.request();
+    }
+
     ApkScouter apkScouter = ApkScouter();
     var _installedApps = await apkScouter.getInstalledApps(
         includeSystemApps: true, includeAppIcon: true);
@@ -76,16 +87,24 @@ class AppState {
       });
 
       // Get Pictures
+      var musicDir = await ExtStorage.getExternalStoragePublicDirectory(
+          ExtStorage.DIRECTORY_MUSIC);
+      Directory(musicDir).listSync(recursive: true).forEach((entry) {
+        if (entry is File) {
+          _allAudios.add(entry);
+        }
+      });
+      // Get Pictures
       var picsDir = await ExtStorage.getExternalStoragePublicDirectory(
-          ExtStorage.DIRECTORY_PICTURES);
+          ExtStorage.DIRECTORY_DCIM);
       Directory(picsDir).listSync(recursive: true).forEach((entry) {
         if (entry is File) {
           _allPictures.add(entry);
         }
       });
-      // Get Pictures
+      // Get Videos
       var videosDir = await ExtStorage.getExternalStoragePublicDirectory(
-          ExtStorage.DIRECTORY_MOVIES);
+          ExtStorage.DIRECTORY_DCIM);
       Directory(videosDir).listSync(recursive: true).forEach((entry) {
         if (entry is File) {
           _allVideos.add(entry);
