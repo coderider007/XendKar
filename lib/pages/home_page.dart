@@ -1,7 +1,13 @@
-import 'package:apk_admin/apk_admin.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_redux/flutter_redux.dart';
+import 'package:xendkar/model/app_state.dart';
+import 'package:xendkar/pages/send_pages.dart';
 import 'package:xendkar/pages/tabs/apps_tab.dart';
+import 'package:xendkar/pages/tabs/audios_tab.dart';
 import 'package:xendkar/pages/tabs/files_tab.dart';
+import 'package:xendkar/pages/tabs/pictures_tab.dart';
+import 'package:xendkar/pages/tabs/recent_tab.dart';
+import 'package:xendkar/pages/tabs/videos_tab.dart';
 import '../widgets/custom_drawer.dart';
 import '../constants.dart';
 
@@ -25,9 +31,9 @@ class _HomePageState extends State<HomePage> {
             isScrollable: true,
             tabs: tabs.map((homeTab) {
               return Container(
-                width: MediaQuery.of(context).size.width / 2 - 50,
+                //width: MediaQuery.of(context).size.width / 2 - 50,
                 child: Tab(
-                  text: homeTab.title,
+                  text: homeTab.title.toString().split('.').last,
                   icon: Icon(homeTab.icon),
                 ),
               );
@@ -45,27 +51,53 @@ class _HomePageState extends State<HomePage> {
         floatingActionButton: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
+            StoreConnector<AppState, AppState>(
+              converter: (store) => store.state,
+              builder: (context, appState) => ClipOval(
+                child: Material(
+                  color: Colors.black.withOpacity(0.40),
+                  child: SizedBox(
+                    height: 30,
+                    width: 30,
+                    child: Center(
+                      child: Text(
+                        (appState.selectedApps.length +
+                                appState.selectedAudios.length +
+                                appState.selectedFiles.length +
+                                appState.selectedPictures.length +
+                                appState.selectedVideos.length)
+                            .toString(), //count.toString(),
+                        style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
             ClipOval(
               child: Material(
-                color: Colors.green,
+                color: Colors.green.withOpacity(0.70),
                 child: InkWell(
                   splashColor: Colors.blue,
                   child: SizedBox(
-                    width: 80,
-                    height: 80,
+                    width: 60,
+                    height: 60,
                     child: Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Column(
                         children: [
                           Icon(
                             Icons.file_download,
-                            size: 40,
+                            size: 20,
                             color: Colors.white,
                           ),
                           Text(
                             'Receive',
                             style: TextStyle(
-                                fontSize: 16,
+                                fontSize: 12,
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold),
                           ),
@@ -79,25 +111,25 @@ class _HomePageState extends State<HomePage> {
             ),
             ClipOval(
               child: Material(
-                color: Colors.blue[300],
+                color: Colors.blue.withOpacity(0.70),
                 child: InkWell(
                   splashColor: Colors.red,
                   child: SizedBox(
-                    width: 80,
-                    height: 80,
+                    width: 60,
+                    height: 60,
                     child: Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Column(
                         children: [
                           Icon(
                             Icons.file_upload,
-                            size: 40,
+                            size: 20,
                             color: Colors.white,
                           ),
                           Text(
                             'Send',
                             style: TextStyle(
-                                fontSize: 16,
+                                fontSize: 12,
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold),
                           ),
@@ -106,7 +138,8 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   onTap: () {
-                    Navigator.of(context).pushNamed(Constants.ROUTE_SEND_PAGE);
+                    Navigator.of(context)
+                        .pushNamed(Constants.ROUTE_PEER_SELECTION_PAGE);
                     // .then(
                     //   (value) => {
                     //     setState(() {
@@ -128,17 +161,19 @@ class _HomePageState extends State<HomePage> {
 class HomeTab {
   const HomeTab({this.title, this.icon});
 
-  final String title;
+  final TITLE title;
   final IconData icon;
 }
 
+enum TITLE { Recent, Files, Videos, Pictures, Apps, Audio }
+
 const List<HomeTab> tabs = const <HomeTab>[
-  // const Choice(title: 'Recent', icon: Icons.watch_later),
-  const HomeTab(title: 'Files', icon: Icons.folder),
-  // const Choice(title: 'Videos', icon: Icons.video_library),
-  // const Choice(title: 'Pictures', icon: Icons.photo_library),
-  const HomeTab(title: 'Apps', icon: Icons.android),
-  // const Choice(title: 'Audio', icon: Icons.library_music),
+  // const HomeTab(title: TITLE.Recent, icon: Icons.watch_later),
+  const HomeTab(title: TITLE.Files, icon: Icons.folder),
+  const HomeTab(title: TITLE.Videos, icon: Icons.video_library),
+  const HomeTab(title: TITLE.Pictures, icon: Icons.photo_library),
+  const HomeTab(title: TITLE.Apps, icon: Icons.android),
+  const HomeTab(title: TITLE.Audio, icon: Icons.library_music),
 ];
 
 class TabViewChoice extends StatefulWidget {
@@ -153,10 +188,18 @@ class TabViewChoice extends StatefulWidget {
 class _TabViewChoiceState extends State<TabViewChoice> {
   @override
   Widget build(BuildContext context) {
-    if (this.widget.homeTab.title == 'Apps') {
-      return AppsTab();
-    } else if (this.widget.homeTab.title == 'Files') {
+    if (this.widget.homeTab.title == TITLE.Recent) {
+      return RecentTab();
+    } else if (this.widget.homeTab.title == TITLE.Files) {
       return FilesTab();
+    } else if (this.widget.homeTab.title == TITLE.Videos) {
+      return VideosTab();
+    } else if (this.widget.homeTab.title == TITLE.Pictures) {
+      return PicturesTab();
+    } else if (this.widget.homeTab.title == TITLE.Apps) {
+      return AppsTab();
+    } else if (this.widget.homeTab.title == TITLE.Audio) {
+      return AudiosTab();
     } else {
       return Container(
         child: Center(

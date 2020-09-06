@@ -6,6 +6,8 @@ class Constants {
   static const ROUTE_HOME = '/';
   static const ROUTE_SEND_PAGE = '/send';
   static const ROUTE_RECEIVE_PAGE = '/receive';
-  static const ROUTE_VIEW_PAGE = '/view';
+  static const ROUTE_PEER_SELECTION_PAGE = '/peerselection';
+  static const ROUTE_PROGRESS_PAGE = '/progress';
   static const MAIN_COLOR = Colors.deepOrange;
+  static const PORT = 8888;
 }

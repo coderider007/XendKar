@@ -33,9 +33,13 @@ class SelectedApp extends StatelessWidget {
         ),
         if (_isSelected)
           Positioned(
-            top: 0,
-            left: 2,
-            child: Icon(Icons.check, color: Colors.white, size: 60),
+            top: 2,
+            right: 2,
+            child: CircleAvatar(
+              maxRadius: 10,
+              backgroundColor: Colors.green[800],
+              child: Icon(Icons.check, color: Colors.white, size: 20),
+            ),
           ),
       ],
     );

@@ -1,8 +1,9 @@
 import 'dart:io';
 
+import 'package:xendkar/pages/search_connect.dart';
+
 import './constants.dart';
 import './pages/home_page.dart';
-import './pages/view_pages.dart';
 
 import 'pages/home_page.dart';
 import 'pages/send_pages.dart';
@@ -15,9 +16,8 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (context) => HomePage());
       case Constants.ROUTE_SEND_PAGE:
         return MaterialPageRoute(builder: (context) => SendPage());
-      case Constants.ROUTE_VIEW_PAGE:
-        final File page = settings.arguments;
-        return MaterialPageRoute(builder: (context) => ViewPages(page));
+      case Constants.ROUTE_PEER_SELECTION_PAGE:
+        return MaterialPageRoute(builder: (context) => SearchConnectPage());
       default:
         return _errorRoute();
     }
